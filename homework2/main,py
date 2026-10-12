@@ -1,0 +1,34 @@
+from dotenv import load_dotenv
+import os
+from langchain_openai import ChatOpenAI
+from agent import RequirementAgent,DesignAgent,CodeAgent
+
+load_dotenv()
+llm=ChatOpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
+    model="glm-4-flash"
+)
+
+class SEWorkflow:
+    def __init__(self,llm):
+        self.agents=[
+            RequirementAgent(llm),
+            DesignAgent(llm),
+            CodeAgent(llm)
+        ]
+        self.state={}
+    def run(self,user_requirement):
+        current_input=user_requirement
+        for agent in self.agents:
+            result=agent.run(current_input)
+            self.state=result
+            current_input=result
+            print(f"\n====={result['stage']}阶段完成=====\n{result['content']}")
+        return self.state
+
+if __name__=="__main__":
+    workflow=SEWorkflow(llm)
+    user_text=input("请输入你的软件需求：")
+    final_state=workflow.run(user_text)
+    print("\n====工作流全部执行完毕，最终生成代码====\n",final_state["content"])
